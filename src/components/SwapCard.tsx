@@ -3,8 +3,40 @@ import { useAccount, useBalance } from 'wagmi';
 import styled from 'styled-components';
 import ethereumLogo from './img/ethereum-icon.png'
 import uniSwapLogo from './img/uniswap-icon.png'
+import useSwap from '../hooks/useSwap';
+
+const UNI_ADDRESS = '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984';
 
 const SwapCard = () => {
+ 
+  const [quote, setQuote] = React.useState(0);
+  const [amount, setAmount] = React.useState(0);
+  const { address } = useAccount();
+  const { data: ETHBalance } = useBalance({
+    address,
+    watch: true,
+  });
+  const { data: UNIBalance } = useBalance({
+    address,
+    token: UNI_ADDRESS,
+    watch: true,
+  });
+
+  const { getQuote, swap } = useSwap();
+
+  const onChangeAmountInput = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setAmount(parseFloat(event.target.value));
+    const quote = await getQuote(parseFloat(event.target.value));
+    setQuote(quote);
+  };
+
+  const onClickSwapButton = async () => {
+    console.log(amount)
+    const txn = await swap(amount);
+    await txn.wait();
+  };
 
   return (
     <MainContainer>
@@ -12,27 +44,28 @@ const SwapCard = () => {
       <div>
         <CoinBar>
           <div><img style={{width:22}} src={ethereumLogo}></img></div>
-          <p>{1}</p>
+          <p>{ETHBalance?.formatted}</p>
           </CoinBar>
 
         <Input
           type="text"
           placeholder="Amount in"
+          onChange={onChangeAmountInput}
         />
       </div>
       <div>
         <CoinBar>
         <div><img style={{width:24}} src={uniSwapLogo}></img></div>
-          <p>{1}</p>
+          <p>{UNIBalance?.formatted}</p>
           </CoinBar>
         <Input
           type="text"
           placeholder="Amount out"
           disabled
-          value={0}
+          value={quote === 0 ? '' : quote}
         />
       </div>
-      <Button disabled={false}>
+      <Button disabled={address ? false : true} onClick={onClickSwapButton}>
         Swap
       </Button>
     </Container>
